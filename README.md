@@ -54,3 +54,8 @@ docker compose -f compose.yml up -d
 # 运行期（docker compose up 时通过 .env 或 export 注入）：
 #   DSH_SYSLOG_ADDRESS          — syslog UDP 地址（默认空，不转发日志）
 #   DSH_HOME_HOST_PATH          — 宿主机数据卷路径（默认 ./dsh-data）
+
+# ---------------------------------------------------------------------------
+# 许可证
+# ---------------------------------------------------------------------------
+# 本项目采用 MIT 许可证，详见 LICENSE 文件。

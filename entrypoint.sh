@@ -28,7 +28,7 @@ DSH_RECOVER=/app/dsh-recover.js
 # ---------------------------------------------------------------------------
 if [ "$(id -u)" = "0" ]; then
   mkdir -p "$DSH_HOME" "$HOME"
-  chown -R "$DSH_UID:$DSH_GID" "$DSH_HOME" "$HOME"
+  # chown -R "$DSH_UID:$DSH_GID" "$DSH_HOME" "$HOME"
 
   # The web profile (the default) runs dsh + nginx in this container. Accept
   # both the `web` alias and the equivalent `--profile web` form.

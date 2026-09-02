@@ -1,0 +1,43 @@
+# Per-Dockerfile ignore for Dockerfile.
+# IMPORTANT: this file REPLACES (not merges with) any root .dockerignore. It must be
+# self-contained. Goal: keep the build context small while preserving everything
+# `pnpm install` + `pnpm run build` + `pnpm run build:web` need.
+
+# --- Always exclude (generated / heavy / private) ---
+**/node_modules
+**/lib
+**/dist
+**/types
+# scripts/types holds hand-written ambient type libs referenced by tsconfig
+# typeRoots (e.g. client-build-environment/index.d.ts). It is SOURCE, not a
+# build output, so re-include it despite the **/types rule above.
+!deepseek-harness/scripts/types
+**/*.tsbuildinfo
+**/coverage
+**/.turbo
+.git
+.gitignore
+.git/info
+**/.DS_Store
+*.log
+*.tmp
+**/*.map
+
+# --- Exclude content not needed to build or run the runtime image ---
+# (Shrinks context; none of these are imported by the TypeScript programs that
+#  `pnpm run build` compiles.)
+# NOTE: `website` and `examples` are intentionally NOT excluded. tsconfig.host.json
+# `include`s `scripts/**/*.ts` (project-doc-site.ts imports website/docs.ts) and
+# `apps/web/tests/**` (references examples/ fixtures), so both must be in context.
+python
+docs
+**/*.md
+vendor/**/node_modules
+
+# --- Exclude the local data dir if it happens to sit in the context ---
+dsh-data
+
+# --- Keep (must NOT be ignored): ---
+#   package.json, pnpm-lock.yaml, pnpm-workspace.yaml, tsconfig*.json
+#   apps/  packages/  native/  vendor/  scripts/
+#   (all matched by COPY . . and required by pnpm + the build scripts)

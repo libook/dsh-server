@@ -1,0 +1,74 @@
+# compose.yml — self-hosted dsh service.
+#
+# Usage (from repo root):
+#   docker compose -f compose.yml up -d --build
+#   docker compose -f compose.yml down
+#
+# All customisation is via environment variables (see .env.example). Every value
+# has a safe default, so a bare `up -d --build` works out of the box with no
+# personal information committed to the repo.
+#
+# Build-time overrides (require a rebuild):
+#   DSH_CLIENT_TITLE            — UI 标题
+#   DSH_CLIENT_COMMIT_HASH      — 源 commit hash
+#   DSH_CLIENT_LOOPBACK_HOSTS   — 额外 loopback 主机名（逗号分隔）
+# Runtime overrides (no rebuild needed):
+#   DSH_SYSLOG_ADDRESS          — syslog UDP 地址（空 = 不转发）
+#   DSH_HOME_HOST_PATH          — 宿主机数据卷路径（默认 ./dsh-data）
+#
+# Decisions encoded here:
+#   * No cap_add, no --security-opt: relies on Landlock under Docker >= 24 / kernel >= 5.13.
+#     bwrap is blocked by default seccomp and dsh falls back to Landlock automatically.
+#   * $DSH_HOME (/home/dsh/.dsh) is a bind mount to ./dsh-data on the host, so config,
+#     credentials, sessions and installed plugins survive `down`/`up` or image rebuilds.
+#   * Runs as root (no `user:`): the entrypoint chowns the mount to uid 10001 and runs
+#     the nginx reverse proxy, then drops the dsh process to `dsh` via gosu.
+#   * Web front door = nginx: dsh binds 127.0.0.1:3080 only; nginx (port 3081) proxies
+#     to it and rewrites Host/Origin to the loopback authority, so dsh always treats
+#     proxied traffic as a local 127.0.0.1 client (see nginx.conf).
+#   * Plugins install at runtime: the image ships pnpm + git and needs registry access.
+#
+# Secrets: API keys live in the volume (file mode 0600 / dir 0700, written by dsh).
+# Treat ./dsh-data as sensitive — back it up, and restrict host access to it.
+# Alternatively inject at runtime: DEEPSEEK_API_KEY is inherited by dsh's process env.
+
+services:
+  dsh:
+    image: dsh:local
+    container_name: DeepSeek-Harness
+    restart: unless-stopped
+    # No `user:` — the entrypoint must start as root to chown the mount and run
+    # nginx, then drops the dsh process to the `dsh` user (uid 10001) via gosu.
+
+    # Host port -> nginx (container port 3081). dsh itself stays on
+    # 127.0.0.1:3080 inside the container and is never exported directly.
+    ports:
+      - "3080:3081"
+
+    environment:
+      DSH_HOME: /home/dsh/.dsh
+      PNPM_STORE_DIR: /home/dsh/.dsh/.pnpm-store
+      TZ: Asia/Shanghai
+      BASH_ENV: ~/.bash_env
+      DSH_PERMISSION_MODE: danger-full-access
+      # DEEPSEEK_API_KEY: "sk-..."          # or rely on credentials stored in the volume
+      # DEEPSEEK_BASE_URL: "https://..."    # optional override
+
+    logging:
+      driver: syslog
+      options:
+        # Leave DSH_SYSLOG_ADDRESS empty to disable remote syslog forwarding.
+        # If you do not want syslog at all, change `driver:` above to
+        # `json-file` (or `local`) and remove the `options:` block entirely.
+        syslog-address: "${DSH_SYSLOG_ADDRESS:-}"
+        tag: "DeepSeek-Harness"
+
+    volumes:
+      # Host dir is created (root-owned) by compose on first `up`; the entrypoint
+      # chowns it to uid 10001. Default is ./dsh-data in the repo root; override
+      # with DSH_HOME_HOST_PATH (absolute or relative to the compose project).
+      - "${DSH_HOME_HOST_PATH:-./dsh-data}:/home/dsh"
+
+    # No privileged mode, no added capabilities, default seccomp (Landlock-compatible).
+    # If you ever run on Docker < 24 / kernel < 5.13 the sandbox fails closed and the
+    # agent cannot execute commands — upgrade Docker/kernel rather than loosening this.

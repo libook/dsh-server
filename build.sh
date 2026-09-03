@@ -25,7 +25,7 @@ git pull --ff-only origin master
 cd ..
 
 # ── 2. 获取 submodule commit hash ──────────────────────────────────
-DSH_COMMIT="$(git submodule status deepseek-harness | awk '{print $1}')"
+DSH_COMMIT="$(git -C deepseek-harness rev-parse HEAD)"
 echo "==> deepseek-harness @ $DSH_COMMIT"
 
 # ── 3. 构建镜像 ────────────────────────────────────────────────────

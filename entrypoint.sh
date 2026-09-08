@@ -58,13 +58,16 @@ fi
 # ---------------------------------------------------------------------------
 mkdir -p "$DSH_HOME"
 
+# Always clean a stale writer lock before any process touches the shared
+# fallback directory. A crashed or abnormally-stopped invocation leaves
+# $DSH_HOME/profiles/node_modules.lock behind; the next
+# healProfilesModuleFallback call times out waiting for it.
+rm -f "$DSH_HOME/profiles/node_modules.lock"
+
 # Version baked into the image (apps/cli/package.json version, e.g. 0.1.0-rc.8).
 DSH_VER="$(node -p "require('$DSH_PKG').version" 2>/dev/null || echo unknown)"
 
 if [ ! -f "$DSH_HOME/.dsh-version" ] || [ "$(cat "$DSH_HOME/.dsh-version" 2>/dev/null)" != "$DSH_VER" ]; then
-  # Clean up a stale node_modules.lock left by an abnormal container stop;
-  # otherwise pnpm can refuse to install with a "locked" error.
-  rm -f "$DSH_HOME/profiles/node_modules.lock"
   if [ -d "$DSH_HOME/profiles" ]; then
     for profile_dir in "$DSH_HOME"/profiles/*/; do
       [ -d "$profile_dir" ] || continue

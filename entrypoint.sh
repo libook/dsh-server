@@ -62,6 +62,9 @@ mkdir -p "$DSH_HOME"
 DSH_VER="$(node -p "require('$DSH_PKG').version" 2>/dev/null || echo unknown)"
 
 if [ ! -f "$DSH_HOME/.dsh-version" ] || [ "$(cat "$DSH_HOME/.dsh-version" 2>/dev/null)" != "$DSH_VER" ]; then
+  # Clean up a stale node_modules.lock left by an abnormal container stop;
+  # otherwise pnpm can refuse to install with a "locked" error.
+  rm -f "$DSH_HOME/profiles/node_modules.lock"
   if [ -d "$DSH_HOME/profiles" ]; then
     for profile_dir in "$DSH_HOME"/profiles/*/; do
       [ -d "$profile_dir" ] || continue

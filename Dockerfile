@@ -109,13 +109,14 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   git gosu ca-certificates python3 python3-pip build-essential nginx \
   curl wget openssh-client iputils-ping traceroute \
+  zsh \
   procps htop lsof \
   jq rsync zip unzip \
   less vim tree \
   && rm -rf /var/lib/apt/lists/*
 
 # Non-root user. Fixed UID so host-side backups of the bind mount map cleanly.
-RUN userdel -r node && useradd -m -u 1000 -g 100 -s /bin/sh dsh
+RUN userdel -r node && useradd -m -u 1000 -g 100 -s /bin/zsh dsh
 
 WORKDIR /app
 

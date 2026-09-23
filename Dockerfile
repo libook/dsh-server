@@ -107,7 +107,7 @@ RUN corepack enable && corepack prepare pnpm@11.7.0 --activate
 # nginx: the reverse-proxy front door for the web profile (see nginx.conf).
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-  git gosu ca-certificates python3 python3-pip build-essential nginx \
+  git gosu ca-certificates python3 python3-pip build-essential nginx pkg-config libssl-dev \
   curl wget openssh-client iputils-ping traceroute \
   zsh \
   procps htop lsof \
